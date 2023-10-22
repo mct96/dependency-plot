@@ -1,0 +1,56 @@
+Semestre,Código,Disciplina,R
+1,ENC-1,Introdução à Engenharia da Computação,
+1,ENC-2,Fundamentos da Matemática,
+1,ENC-3,Cálculo Vetorial e Geometria Analítica,
+1,ENC-4,Química Geral e Ciência dos Materiais,
+1,ENC-5,Desenho Técnico em Ambiente Computacional,
+1,ENC-6,Algoritmos I,
+1,ENC-7,Economia,
+2,ENC-8,Cálculo Diferencial e Integral I,ENC-2
+2,ENC-9,Física Geral e Experimental I,ENC-2
+2,ENC-10,Álgebra Linear,ENC-3
+2,ENC-11,Metodologia Científica,
+2,ENC-12,Arquitetura e Organização de computadores,ENC-1
+2,ENC-13,Algoritmos II,ENC-6
+2,ENC-14,Ciências do Ambiente,
+3,ENC-15,Cálculo Diferencial e Integral II,ENC-8
+3,ENC-16,Física Geral e Experimental II,ENC-9
+3,ENC-17,Eletrônica Digital,ENC-2
+3,ENC-18,Extensão I,
+3,ENC-19,Sistemas Operacionais,ENC-12
+3,ENC-20,Estruturas de Dados,ENC-13
+3,ENC-21,Probabilidade e Estatística Computacional,ENC-8
+4,ENC-22,Equações Diferenciais,ENC-15
+4,ENC-23,Física Geral e Experimental III,ENC-16
+4,ENC-24,Cálculo Numérico,ENC-8
+4,ENC-25,Banco de Dados,ENC-20
+4,ENC-26,Programação Orientada a Objetos,ENC-20
+4,ENC-27,Matemática Discreta e Teoria dos Grafos,ENC-13
+4,ENC-28,Transmissão e Comunicação de Dados,ENC-17
+5,ENC-29,Compiladores,ENC-12; ENC-26; ENC-27
+5,ENC-30,Programação Web,ENC-26
+5,ENC-31,Circuitos elétricos I,ENC-17; ENC-23
+5,ENC-32,Laboratório de Circuitos Elétricos I,ENC-17; ENC-23
+5,ENC-33,Processamento Paralelo e Sistemas Distribuídos,ENC-12
+5,ENC-34,Engenharia de software,ENC-26
+5,ENC-35,Ética Profissional,
+6,ENC-36,Eletrônica analógica I,ENC-23
+6,ENC-37,Circuitos elétricos II,ENC-31
+6,ENC-38,Laboratório de Circuitos Elétricos II,ENC-31
+6,ENC-39,Sinais e Sistemas Lineares,ENC-22; ENC-31
+6,ENC-40,Análise e Projeto de Sistemas Computacionais,ENC-34
+6,ENC-41,Inteligência Artificial,ENC-21
+6,ENC-42,Redes de computadores,ENC-28
+7,ENC-43,Microcontroladores,ENC-37
+7,ENC-44,Eletrônica analógica II,ENC-29
+7,ENC-45,Controle de Sistemas Contínuos I,ENC-39
+7,ENC-46,Segurança do Trabalho,
+7,ENC-47,Mineração de dados ,ENC-41
+7,ENC-48,Extensão II,ENC-40
+7,ENC-49,Segurança de Sistemas de Computação,ENC-42
+8,ENC-50,Sistemas Embarcados,ENC-43
+8,ENC-51,Processamento Digital de Sinais,ENC-39
+8,ENC-52,Projeto de Sistemas Inteligentes,ENC-47
+8,ENC-53,Disciplina Eletiva,
+8,ENC-54,Administração,
+8,ENC-55,Trabalho de Conclusão do Curso,ENC-48
