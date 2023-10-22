@@ -1,0 +1,56 @@
+semester,code,name,requirement,duration
+1,ENC-1,Introdução à Engenharia da Computação,,34
+1,ENC-2,Fundamentos da Matemática,,68
+1,ENC-3,Cálculo Vetorial e Geometria Analítica,,68
+1,ENC-4,Química Geral e Ciência dos Materiais,,34
+1,ENC-5,Desenho Técnico em Ambiente Computacional,,34
+1,ENC-6,Algoritmos I,,68
+1,ENC-7,Economia,,34
+2,ENC-8,Cálculo Diferencial e Integral I,ENC-2,68
+2,ENC-9,Física Geral e Experimental I,ENC-2,68
+2,ENC-10,Álgebra Linear,ENC-3,68
+2,ENC-11,Metodologia Científica,,34
+2,ENC-12,Arquitetura e Organização de computadores,ENC-1,68
+2,ENC-13,Algoritmos II,ENC-6,68
+2,ENC-14,Ciências do Ambiente,,34
+3,ENC-15,Cálculo Diferencial e Integral II,ENC-8,68
+3,ENC-16,Física Geral e Experimental II,ENC-9,68
+3,ENC-17,Eletrônica Digital,ENC-2,68
+3,ENC-18,Extensão I,,68
+3,ENC-19,Sistemas Operacionais,ENC-12,34
+3,ENC-20,Estruturas de Dados,ENC-13,68
+3,ENC-21,Probabilidade e Estatística Computacional,ENC-8,34
+4,ENC-22,Equações Diferenciais,ENC-15,68
+4,ENC-23,Física Geral e Experimental III,ENC-16,68
+4,ENC-24,Cálculo Numérico,ENC-8,68
+4,ENC-25,Banco de Dados,ENC-20,68
+4,ENC-26,Programação Orientada a Objetos,ENC-20,68
+4,ENC-27,Matemática Discreta e Teoria dos Grafos,ENC-13,34
+4,ENC-28,Transmissão e Comunicação de Dados,ENC-17,68
+5,ENC-29,Compiladores,ENC-12; ENC-26; ENC-27,68
+5,ENC-30,Programação Web,ENC-26,68
+5,ENC-31,Circuitos elétricos I,ENC-17; ENC-23,68
+5,ENC-32,Laboratório de Circuitos Elétricos I,ENC-17; ENC-23,34
+5,ENC-33,Processamento Paralelo e Sistemas Distribuídos,ENC-12,68
+5,ENC-34,Engenharia de software,ENC-26,68
+5,ENC-35,Ética Profissional,,34
+6,ENC-36,Eletrônica analógica I,ENC-23,68
+6,ENC-37,Circuitos elétricos II,ENC-31,68
+6,ENC-38,Laboratório de Circuitos Elétricos II,ENC-31,34
+6,ENC-39,Sinais e Sistemas Lineares,ENC-22; ENC-31,68
+6,ENC-40,Análise e Projeto de Sistemas Computacionais,ENC-34,68
+6,ENC-41,Inteligência Artificial,ENC-21,68
+6,ENC-42,Redes de computadores,ENC-28,68
+7,ENC-43,Microcontroladores,ENC-37,68
+7,ENC-44,Eletrônica analógica II,ENC-29,68
+7,ENC-45,Controle de Sistemas Contínuos I,ENC-39,68
+7,ENC-46,Segurança do Trabalho,,34
+7,ENC-47,Mineração de dados ,ENC-41,68
+7,ENC-48,Extensão II,ENC-40,68
+7,ENC-49,Segurança de Sistemas de Computação,ENC-42,34
+8,ENC-50,Sistemas Embarcados,ENC-43,68
+8,ENC-51,Processamento Digital de Sinais,ENC-39,34
+8,ENC-52,Projeto de Sistemas Inteligentes,ENC-47,68
+8,ENC-53,Disciplina Eletiva,,34
+8,ENC-54,Administração,,34
+8,ENC-55,Trabalho de Conclusão do Curso,ENC-48,34
