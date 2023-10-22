@@ -1,6 +1,8 @@
 import math
 import pandas as pd
 import cairo
+import networkx as nx
+from collections import defaultdict
 
 WIDTH, HEIGHT = 2000, 720
 
@@ -10,7 +12,7 @@ ctx.select_font_face("Times", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
 
 lanes = {} # identified by index
 lane_count = {} # number of discipline per lane
-discipline = {} # identified by code
+discipline = defaultdict(dict) # identified by code
 
 def draw_background(*color):
     ctx.set_source_rgb(*color)
@@ -96,7 +98,7 @@ def draw_discipline(code, name, duration, semester, lanes, margin_size=30,
     xf -= margin_size
     yi = 25 + 100 * index_v
     yf =  yi + 80
-    discipline[code] = {"back": (xi, middle(yi, yf)), "front": (xf, middle(yi, yf))}
+    discipline[code]["geometry"] = {"back": (xi, middle(yi, yf)), "front": (xf, middle(yi, yf))}
     xi, yi, xf, yf = draw_rectangle(xi, yi, xf, yf, color, border_color,
                                     border_size)
     xi, yi, xf, yf = xi + padding_size, yi + padding_size, xf - padding_size, yf - padding_size
@@ -108,14 +110,27 @@ def draw_discipline(code, name, duration, semester, lanes, margin_size=30,
     lane_count[semester] += 1   
 
     
-def connect(src_code, dst_code, line_width=3, color=(0.1, 0.1, 0.1)):
+def connect(src_code, dst_code, discipline, lanes, line_width=3, color=(0.1, 0.1, 0.1)):
     ctx.save()
     ctx.set_line_width(line_width)
     ctx.set_source_rgba(*color)
-    src = discipline[src_code]["front"]
-    dst = discipline[dst_code]["back"]
+    src = discipline[src_code]["geometry"]["front"]
+    dst = discipline[dst_code]["geometry"]["back"]
     ctx.move_to(*src)
-    ctx.line_to(*dst)
+    if discipline[src_code]["meta-data"]["semester"] + 1 == discipline[dst_code]["meta-data"]["semester"]:
+        ctx.line_to(lanes[discipline[src_code]["meta-data"]["semester"]][1], discipline[src_code]["geometry"]["front"][1])
+        ctx.line_to(lanes[discipline[src_code]["meta-data"]["semester"]][1], discipline[dst_code]["geometry"]["back"][1])
+        ctx.line_to(*dst)
+    else:
+        ctx.line_to(lanes[discipline[src_code]["meta-data"]["semester"]][1], discipline[src_code]["geometry"]["front"][1])
+        if discipline[src_code]["geometry"]["back"][1] < discipline[dst_code]["geometry"]["back"][1]:
+            yf = discipline[dst_code]["geometry"]["back"][1] - 50
+        else:
+            yf = discipline[dst_code]["geometry"]["back"][1] + 50
+        ctx.line_to(lanes[discipline[src_code]["meta-data"]["semester"]][1], yf)
+        ctx.line_to(lanes[discipline[dst_code]["meta-data"]["semester"]][0], yf)
+        ctx.line_to(lanes[discipline[dst_code]["meta-data"]["semester"]][0], dst[1])
+        ctx.line_to(*dst)
     ctx.stroke()
 
     ctx.restore()
@@ -127,17 +142,56 @@ def main():
 
     df = pd.read_csv("matrix.csv")
     requirements = []
+    G = nx.DiGraph()
+    
     for i, row in df.iterrows():
-        draw_discipline(row["code"], row["name"], row["duration"], row["semester"], lanes)
+        discipline[row["code"]]["meta-data"] = {
+            "code": row["code"],
+            "name": row["name"],
+            "duration": row["duration"],
+            "semester": row["semester"]
+        }
+        
+        G.add_node(row["code"])
+        
         if str(row["requirement"]).startswith("ENC"):
             reqs = list(map(str.strip, row["requirement"].split(';')))
             for r in reqs:
                 requirements.append((r, row["code"]))
+                G.add_edge(r, row["code"])
+
+    paths = []
+    for i, row in df.iterrows():
+        path = list(nx.dfs_edges(G, source=row["code"]))
+        paths.append(path)
+
+    paths.sort(key=lambda l:-len(l))
+
+    already_drawn = []
+    for path in paths:
+        if not len(path):
+            continue
+
+        data = discipline[path[0][0]]["meta-data"]
+        if data["code"] not in already_drawn:
+            already_drawn.append(data["code"])
+            draw_discipline(data["code"], data["name"], data["duration"], data["semester"], lanes)
+        for src, dst in path:
+            data = discipline[dst]["meta-data"]
+            if data["code"] not in already_drawn:
+                already_drawn.append(data["code"])
+                draw_discipline(data["code"], data["name"], data["duration"], data["semester"], lanes)
+
+    for d in discipline:
+        if d not in already_drawn:
+            data = discipline[d]["meta-data"]
+            draw_discipline(data["code"], data["name"], data["duration"], data["semester"], lanes)
+            
 
     for req in requirements:
-        connect(req[0], req[1])
+        connect(req[0], req[1], discipline, lanes)
         
-    surface.write_to_png("example.png")  # Output to PNG
+    surface.write_to_png("v1.png")  # Output to PNG
 
 if __name__ == "__main__":
     main()
