@@ -8,26 +8,32 @@ from matplotlib.pyplot import cm
 import numpy as np
 import matplotlib
 
-WIDTH, HEIGHT = 2000, 1000
+r = 297 / 210
+WIDTH, HEIGHT = int(1500 * r), 1000
+
 random.seed(1)
 
 surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
 ctx = cairo.Context(surface)
 ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
 
-colors_palette = matplotlib.colormaps['Set1'](np.linspace(0, 1, 50))
-colors = {f'ENC-{i}': color for i, color in enumerate(colors_palette)}
-
+colors_palette = matplotlib.colormaps['prism'](np.linspace(0, 1, 30))
+colors_index = 0
+colors = {}
 
 class Configuration:
     col = 8
     lin = 7
-    gap_v = 40
-    gap_h = 70
-    line_offset = 5
+    gap_v = 60
+    gap_h = 100
+    line_offset = 10
     box_width = 170
     box_height = 80
     start_point = (10, 50)
+    line_width = 3
+    arrow_width = 3
+    arrow_size = 8
+    attach_space = 15
 
 class BoxConfiguration:
     margin_size=30
@@ -156,15 +162,29 @@ def alloc(direction, func, gconfig):
             lines[i][code] = start
             start += gconfig.line_offset
     return lines
+
+def retrive_color(code):
+    global colors_index
+    if code not in colors:
+        colors[code] = colors_palette[colors_index]
+        colors_index += 1
+    return colors[code]
                 
-def connect(src_code, dst_code, h, v, line_width=2, arrow_width=3, color=(0.1, 0.1, 0.1)):
+def connect(src_code, dst_code, h, v, gconfig):
     ctx.save()
-    ctx.set_line_width(line_width)
-    ctx.set_source_rgba(*colors[src_code])
+    ctx.set_line_width(gconfig.line_width)
     
     src = disciplines[src_code]
     dst = disciplines[dst_code]
+    
+    if len(dst["reqs"]):
+        ctx.set_source_rgba(*retrive_color(src_code))
+        
     p0, pf = src["geometry"]["front"], dst["geometry"]["back"]
+
+    if len(dst["reqs"]) > 1:
+        yy = gconfig.attach_space * (dst["reqs"].index(src_code) - len(dst["reqs"]) / 2)
+        pf = (pf[0], pf[1] + yy)
     
     ctx.move_to(*p0)
     ctx.line_to(v[src["semester"] - 1][src_code], p0[1])
@@ -176,18 +196,19 @@ def connect(src_code, dst_code, h, v, line_width=2, arrow_width=3, color=(0.1, 0
         ctx.line_to(v[src["semester"] - 1][src_code], y)
         ctx.line_to(v[dst["semester"] - 2][src_code], y)
     ctx.line_to(v[dst["semester"] - 2][src_code], pf[1])
+    
     ctx.line_to(*pf)
     
     ctx.stroke()
 
-    ctx.set_line_width(arrow_width)
+    ctx.set_line_width(gconfig.arrow_width)
     
     ctx.move_to(*pf)
-    ctx.rel_line_to(-5, -5)
+    ctx.rel_line_to(-gconfig.arrow_size, -gconfig.arrow_size)
     ctx.stroke()
 
     ctx.move_to(*pf)
-    ctx.rel_line_to(-5, +5)
+    ctx.rel_line_to(-gconfig.arrow_size, +gconfig.arrow_size)
     ctx.stroke()
 
     ctx.restore()
@@ -214,6 +235,7 @@ def main():
 
         if str(row["requirement"]).startswith("ENC"):
             reqs = list(map(str.strip, row["requirement"].split(';')))
+            disciplines[row["code"]]["reqs"] = sorted(list(set(reqs)))
             for r in reqs:
                 requirements.append((r, row["code"]))
                 G.add_edge(r, row["code"])
@@ -229,11 +251,11 @@ def main():
     v = alloc(vert, lambda x: get_gap_v(x, gconfig), gconfig)
 
     for i, req in enumerate(requirements):
-        connect(req[0], req[1], h, v)
+        connect(req[0], req[1], h, v, gconfig)
 
 
 
-    surface.write_to_png("v2.png")  # Output to PNG
+    surface.write_to_png("v3.png")  # Output to PNG
 
 if __name__ == "__main__":
     main()
