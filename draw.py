@@ -4,6 +4,9 @@ import cairo
 import networkx as nx
 from collections import defaultdict, Counter
 import random
+from matplotlib.pyplot import cm
+import numpy as np
+import matplotlib
 
 WIDTH, HEIGHT = 2000, 1000
 random.seed(1)
@@ -11,7 +14,9 @@ random.seed(1)
 surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
 ctx = cairo.Context(surface)
 ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-colors = [(random.random(), random.random(), random.random(), .8) for i in range(50)]
+
+colors_palette = matplotlib.colormaps['Set1'](np.linspace(0, 1, 50))
+colors = {f'ENC-{i}': color for i, color in enumerate(colors_palette)}
 
 
 class Configuration:
@@ -155,7 +160,7 @@ def alloc(direction, func, gconfig):
 def connect(src_code, dst_code, h, v, line_width=2, arrow_width=3, color=(0.1, 0.1, 0.1)):
     ctx.save()
     ctx.set_line_width(line_width)
-    ctx.set_source_rgba(*color)
+    ctx.set_source_rgba(*colors[src_code])
     
     src = disciplines[src_code]
     dst = disciplines[dst_code]
@@ -189,7 +194,7 @@ def connect(src_code, dst_code, h, v, line_width=2, arrow_width=3, color=(0.1, 0
 
 
 def main():
-    draw_background(0.9, 0.9, 0.9)
+    draw_background(0.8, 0.8, 0.8)
 
 
     bconfig = BoxConfiguration()
@@ -198,6 +203,7 @@ def main():
     requirements = []
     G = nx.DiGraph()
 
+    c = Counter()
     for i, row in df.iterrows():
         disciplines[row["code"]] = {
             "code": row["code"],
@@ -205,41 +211,16 @@ def main():
             "duration": row["duration"],
             "semester": row["semester"]
         }
-        
-        G.add_node(row["code"])
-        
+
         if str(row["requirement"]).startswith("ENC"):
             reqs = list(map(str.strip, row["requirement"].split(';')))
             for r in reqs:
                 requirements.append((r, row["code"]))
                 G.add_edge(r, row["code"])
                 
-    paths = []
-    for i, row in df.iterrows():
-        path = list(nx.dfs_edges(G, source=row["code"]))
-        paths.append(path)
-
-    paths.sort(key=lambda l:-len(l))
-
-    already_drawn = []
-    free = Counter()
-    for path in paths:
-        if not len(path):
-            continue
-        code = path[0][0]
-        discipline = disciplines[code]
-        if code not in already_drawn:
-            already_drawn.append(code)
-            draw_box(discipline["code"], discipline["name"], discipline["duration"], free[discipline["semester"] - 1], discipline["semester"] - 1, bconfig, gconfig)
-            free[discipline["semester"] - 1] += 1
-
-    for code in disciplines:
-        discipline = disciplines[code]
-        if code not in already_drawn:
-            draw_box(discipline["code"], discipline["name"], discipline["duration"], free[discipline["semester"] - 1], discipline["semester"] - 1, bconfig, gconfig)
-            free[discipline["semester"] - 1] += 1
-            
-
+        draw_box(row["code"], row["name"], row["duration"], c[row["semester"] - 1], row["semester"] - 1, bconfig, gconfig)
+        c[row["semester"] - 1] += 1
+                    
     hor, vert = defaultdict(list), defaultdict(list)
     for i, req in enumerate(requirements):
         reserve(req[0], req[1], hor, vert, gconfig)
@@ -252,7 +233,7 @@ def main():
 
 
 
-    surface.write_to_png("v1.png")  # Output to PNG
+    surface.write_to_png("v2.png")  # Output to PNG
 
 if __name__ == "__main__":
     main()

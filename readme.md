@@ -3,3 +3,6 @@
 
 ### version 1
 ![image](./v1.png)
+
+### version 2
+![image](./v2.png)
