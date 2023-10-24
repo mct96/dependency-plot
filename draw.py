@@ -10,19 +10,41 @@ random.seed(1)
 
 surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
 ctx = cairo.Context(surface)
-ctx.select_font_face("Times", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
 colors = [(random.random(), random.random(), random.random(), .8) for i in range(50)]
 
-lanes = {} # identified by index
+
+class Configuration:
+    col = 8
+    lin = 7
+    gap_v = 40
+    gap_h = 70
+    line_offset = 5
+    box_width = 170
+    box_height = 80
+    start_point = (10, 50)
+
+class BoxConfiguration:
+    margin_size=30
+    border_size=1
+    padding_size=4
+    color=(.1, .1, .1)
+    bg_color=(1, 1, 1)
+    border_color=(0, 0, 0)
+    
+
+box = dict()    
+    
+    
 lane_count = {} # number of discipline per lane
-discipline = defaultdict(dict) # identified by code
-gaps_h = defaultdict(set)
-gaps_v = defaultdict(set)
+disciplines = defaultdict(dict) # identified by code
 
 def draw_background(*color):
+    ctx.save()
     ctx.set_source_rgb(*color)
     ctx.rectangle(0, 0, WIDTH, HEIGHT)
     ctx.fill()
+    ctx.restore()
 
 
 def set_font_size_and_get_width(font_size, text):
@@ -65,109 +87,101 @@ def draw_text_centered(x, y, text, width):
     ctx.move_to(x + (width / 2 - w / 2), y)
     ctx.show_text(text)
     
-def draw_rectangle(xi, yi, xf, yf, color, border_color, border_size):
-    ctx.set_source_rgb(*border_color)
-    ctx.rectangle(xi, yi, xf - xi, yf - yi)
+def draw_rectangle(xi, yi, xf, yf, bconfig):
+    ctx.set_source_rgb(*bconfig.bg_color)
+    ctx.rectangle(xi, yi, xf-xi, yf-yi)
     ctx.fill()
 
-    xi += border_size
-    yi += border_size
-    xf -= border_size
-    yf -= border_size
-    
-    ctx.set_source_rgb(*color)
-    ctx.rectangle(xi, yi, xf - xi, yf - yi)
-    ctx.fill()
-    return xi, yi, xf, yf
+    ctx.set_source_rgb(*bconfig.border_color)
+    ctx.set_line_width(bconfig.border_size)
+    ctx.rectangle(xi, yi, xf-xi, yf-yi)
+    ctx.stroke()
 
-def draw_lanes(n_lanes, color=(1, 0, 0), line_width=1):
-    ctx.set_source_rgb(*color)
-    width = WIDTH // n_lanes
-    ctx.set_line_width(line_width)
+def draw_box(code, name, duration, i, j, bconfig, gconfig):
+    xi = gconfig.start_point[0] + (gconfig.box_width + gconfig.gap_h) * j
+    xf = xi + gconfig.box_width
+    yi = gconfig.start_point[1] + (gconfig.box_height + gconfig.gap_v) * i
+    yf = yi + gconfig.box_height
     
-    for i in range(n_lanes):
-        ctx.move_to((i + 1) * width, 0)
-        ctx.line_to((i + 1) * width, HEIGHT)
-        ctx.stroke()
-        lanes[i + 1] = (i * width, (i + 1) * width)
-        lane_count[i + 1] = 0
-        
-
-def draw_discipline(code, name, duration, semester, lanes, margin_size=30,
-                    border_size=4, padding_size=4, color=(.1, .1, .1), bg_color=(1, 1, 1),
-                    border_color=(0, 0, 0)):
-    xi, xf = lanes[semester]
-    index_v = lane_count[semester]
-    
-    xi += margin_size
-    xf -= margin_size
-    yi = 25 + 140 * index_v
-    yf =  yi + 80
-    discipline[code]["geometry"] = {
+    disciplines[code]["geometry"] = {
         "back": (xi, middle(yi, yf)),
         "front": (xf, middle(yi, yf)),
-        "index_y": index_v
+        "xi": xi,
+        "xf": xf,
+        "yi": yi,
+        "yf": yf,
+        "i": i,
     }
     
-    xi, yi, xf, yf = draw_rectangle(xi, yi, xf, yf, bg_color, border_color,
-                                    border_size)
+    draw_rectangle(xi, yi, xf, yf, bconfig)
+    xi, yi, xf, yf = xi + bconfig.padding_size, yi + bconfig.padding_size, xf - bconfig.padding_size, yf - bconfig.padding_size
+    ctx.set_source_rgb(*bconfig.color)
+    draw_text_centered(xi, yi + 15, code, xf-xi) ## draw discipline's code
+    draw_text_centered_f(xi, yi + 40, name, xf-xi, max_font_size=12) ## draw discipline's name
+    draw_text_centered(xi, yi + 65, str(duration), gconfig.box_width) ## draw discipline's durantion
 
-    xi, yi, xf, yf = xi + padding_size, yi + padding_size, xf - padding_size, yf - padding_size
-    width = xf - xi
-    ctx.set_source_rgb(*color)
-    draw_text_centered(xi, yi + 15, code, width) ## draw discipline's code
-    draw_text_centered_f(xi, yi + 40, name, width, max_font_size=12) ## draw discipline's name
-    draw_text_centered(xi, yi + 65, str(duration), width) ## draw discipline's durantion
-    lane_count[semester] += 1   
+def get_gap_v(j, gconfig):
+    xi = gconfig.start_point[0] + (gconfig.box_width + gconfig.gap_h) * j + gconfig.box_width
+    xf = xi + gconfig.gap_h
+    return xi, xf
 
+def get_gap_h(i, gconfig):
+    yi = gconfig.start_point[1] + (gconfig.box_height + gconfig.gap_v) * i + gconfig.box_height
+    yf = yi + gconfig.gap_v
+    return yi, yf  
 
-def reserve(src_code, dst_code, discipline):
-    src = discipline[src_code]["geometry"]["front"]
-    dst = discipline[dst_code]["geometry"]["back"]
-
-    gaps_v[discipline[src_code]["meta-data"]["semester"] - 1].add(src_code)
-    gaps_v[discipline[dst_code]["meta-data"]["semester"] - 2].add(src_code)
-    if discipline[src_code]["meta-data"]["semester"] + 1 < discipline[dst_code]["meta-data"]["semester"]:
-        if discipline[src_code]["geometry"]["index_y"] < discipline[dst_code]["geometry"]["index_y"]:
-            gaps_h[discipline[dst_code]["geometry"]["index_y"] + 1].add(src_code)
-        else:
-            gaps_h[discipline[src_code]["geometry"]["index_y"]].add(src_code)
-
-def calculate_offsets(reservation):
-    offsets = dict()
-    return offsets
+def reserve(src_code, dst_code, hor, vert, gconfig):
+    src, dst = disciplines[src_code], disciplines[dst_code]
+    vert[src["semester"] - 1].append(src_code)
+    vert[dst["semester"] - 2].append(src_code)
     
-def connect(src_code, dst_code, discipline, lanes, line_width=2, arrow_width=3, color=(0.1, 0.1, 0.1)):
+    if src["semester"] + 1 < dst["semester"]:
+        if src["geometry"]["i"] == 0 == dst["geometry"]["i"]:
+            hor[0].append(src_code)
+        else:
+            hor[dst["geometry"]["i"] - 1].append(src_code)
+        
+def alloc(direction, func, gconfig):
+    lines = defaultdict(lambda: defaultdict(float))
+    for i, codes in direction.items():
+        yi, yf = func(i) # calculate the init and end of the gap
+        mid = (yf + yi) / 2
+        start = mid - gconfig.line_offset * len(set(codes)) / 2
+        for code in set(codes):
+            lines[i][code] = start
+            start += gconfig.line_offset
+    return lines
+                
+def connect(src_code, dst_code, h, v, line_width=2, arrow_width=3, color=(0.1, 0.1, 0.1)):
     ctx.save()
     ctx.set_line_width(line_width)
-    
     ctx.set_source_rgba(*color)
-    src = discipline[src_code]["geometry"]["front"]
-    dst = discipline[dst_code]["geometry"]["back"]
-    ctx.move_to(*src)
-    if discipline[src_code]["meta-data"]["semester"] + 1 == discipline[dst_code]["meta-data"]["semester"]:
-        ctx.line_to(lanes[discipline[src_code]["meta-data"]["semester"]][1], discipline[src_code]["geometry"]["front"][1])
-        ctx.line_to(lanes[discipline[src_code]["meta-data"]["semester"]][1], discipline[dst_code]["geometry"]["back"][1])
-        ctx.line_to(*dst)
-    else:
-        ctx.line_to(lanes[discipline[src_code]["meta-data"]["semester"]][1], discipline[src_code]["geometry"]["front"][1])
-        if discipline[src_code]["geometry"]["back"][1] < discipline[dst_code]["geometry"]["back"][1]:
-            yf = discipline[dst_code]["geometry"]["back"][1] - 50
+    
+    src = disciplines[src_code]
+    dst = disciplines[dst_code]
+    p0, pf = src["geometry"]["front"], dst["geometry"]["back"]
+    
+    ctx.move_to(*p0)
+    ctx.line_to(v[src["semester"] - 1][src_code], p0[1])
+    if src["semester"] + 1 < dst["semester"]:
+        if src["geometry"]["i"] == 0 == dst["geometry"]["i"]:
+            y = h[0][src_code]
         else:
-            yf = discipline[dst_code]["geometry"]["back"][1] + 50
-        ctx.line_to(lanes[discipline[src_code]["meta-data"]["semester"]][1], yf)
-        ctx.line_to(lanes[discipline[dst_code]["meta-data"]["semester"]][0], yf)
-        ctx.line_to(lanes[discipline[dst_code]["meta-data"]["semester"]][0], dst[1])
-        ctx.line_to(*dst)
+            y = h[dst["geometry"]["i"] - 1][src_code]
+        ctx.line_to(v[src["semester"] - 1][src_code], y)
+        ctx.line_to(v[dst["semester"] - 2][src_code], y)
+    ctx.line_to(v[dst["semester"] - 2][src_code], pf[1])
+    ctx.line_to(*pf)
+    
     ctx.stroke()
 
     ctx.set_line_width(arrow_width)
     
-    ctx.move_to(*dst)
+    ctx.move_to(*pf)
     ctx.rel_line_to(-5, -5)
     ctx.stroke()
 
-    ctx.move_to(*dst)
+    ctx.move_to(*pf)
     ctx.rel_line_to(-5, +5)
     ctx.stroke()
 
@@ -176,14 +190,16 @@ def connect(src_code, dst_code, discipline, lanes, line_width=2, arrow_width=3, 
 
 def main():
     draw_background(0.9, 0.9, 0.9)
-    draw_lanes(8, color=(0.8, 0.8, 0.8))
 
-    df = pd.read_csv("matrix.csv")
+
+    bconfig = BoxConfiguration()
+    gconfig = Configuration()
+    df = pd.read_csv("matrix.csv")        
     requirements = []
     G = nx.DiGraph()
-    
+
     for i, row in df.iterrows():
-        discipline[row["code"]]["meta-data"] = {
+        disciplines[row["code"]] = {
             "code": row["code"],
             "name": row["name"],
             "duration": row["duration"],
@@ -206,31 +222,34 @@ def main():
     paths.sort(key=lambda l:-len(l))
 
     already_drawn = []
+    free = Counter()
     for path in paths:
         if not len(path):
             continue
+        code = path[0][0]
+        discipline = disciplines[code]
+        if code not in already_drawn:
+            already_drawn.append(code)
+            draw_box(discipline["code"], discipline["name"], discipline["duration"], free[discipline["semester"] - 1], discipline["semester"] - 1, bconfig, gconfig)
+            free[discipline["semester"] - 1] += 1
 
-        border_color = (.1, .1, .1)
-        border_size = 2
-        data = discipline[path[0][0]]["meta-data"]
-        if data["code"] not in already_drawn:
-            already_drawn.append(data["code"])
-            draw_discipline(data["code"], data["name"], data["duration"], data["semester"], lanes, bg_color=(.9, .9, .9), border_color=border_color, border_size=border_size)
-        for src, dst in path:
-            data = discipline[dst]["meta-data"]
-            if data["code"] not in already_drawn:
-                already_drawn.append(data["code"])
-                draw_discipline(data["code"], data["name"], data["duration"], data["semester"], lanes, bg_color=(0.9, 0.9, 0.9), border_color=border_color, border_size=border_size)
-
-    for d in discipline:
-        if d not in already_drawn:
-            data = discipline[d]["meta-data"]
-            draw_discipline(data["code"], data["name"], data["duration"], data["semester"], lanes, bg_color=(0.9, 0.9, 0.9), border_color=border_color, border_size=border_size)
+    for code in disciplines:
+        discipline = disciplines[code]
+        if code not in already_drawn:
+            draw_box(discipline["code"], discipline["name"], discipline["duration"], free[discipline["semester"] - 1], discipline["semester"] - 1, bconfig, gconfig)
+            free[discipline["semester"] - 1] += 1
             
+
+    hor, vert = defaultdict(list), defaultdict(list)
     for i, req in enumerate(requirements):
-        reservation = reserve(req[0], req[1], discipline)
-        offsets = calculate_offsets(reservation)
-        connect(req[0], req[1], discipline, lanes, offsets, color=colors[i])
+        reserve(req[0], req[1], hor, vert, gconfig)
+
+    h = alloc(hor, lambda x: get_gap_h(x, gconfig), gconfig)
+    v = alloc(vert, lambda x: get_gap_v(x, gconfig), gconfig)
+
+    for i, req in enumerate(requirements):
+        connect(req[0], req[1], h, v)
+
 
 
     surface.write_to_png("v1.png")  # Output to PNG
